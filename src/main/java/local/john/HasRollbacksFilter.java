@@ -40,5 +40,67 @@ public class HasRollbacksFilter {
         roots.add(g4);
 
         roots.add(e9);
+
+        printAllNodes(roots);
+        // System.out.println();
+        // List<ISavedTreeItem> filtered = filterForHasRollbacks(roots);
+        // System.out.println(filtered);
+    }
+
+    private static void printAllNodes(List<ISavedTreeItem> roots) {
+        printAllNodes(roots, "");
+    }
+
+    private static void printAllNodes(List<ISavedTreeItem> nodes, String indent) {
+        for (ISavedTreeItem node : nodes) {
+            node.typeMatcher()
+                .ifMatch(Group.class)
+                    .thenDo(
+                        (Group group) -> {
+                            System.out.println(indent + group.toString());
+                            printAllNodes(group.getChildren(), indent + "\t");
+                        })
+                .ifMatch(Endpoint.class)
+                    .thenDo(
+                        (Endpoint endpoint) -> {
+                            System.out.println(indent + endpoint.toString());
+                        });
+        }
+    }
+
+    private static List<ISavedTreeItem> filterForHasRollbacks(List<ISavedTreeItem> nodes) {
+        List<ISavedTreeItem> res = new ArrayList<>();
+        for (ISavedTreeItem node : nodes) {
+            filterForHasRollbacks(node, res);
+        }
+        return res;
+    }
+
+    private static boolean filterForHasRollbacks(ISavedTreeItem node, List<ISavedTreeItem> results) {
+        if (node instanceof Endpoint) {
+            Endpoint eNode = (Endpoint) node;
+            if (eNode.hasRollback()) {
+                results.add(eNode);
+                return true;
+            } else {
+                return false;
+            }
+        } else if (node instanceof Group) {
+            Group gNode = (Group) node;
+            boolean anyRollbacks = false;
+            List<ISavedTreeItem> childResults = new ArrayList<>();
+            for (ISavedTreeItem child : gNode.getChildren()) {
+                if (filterForHasRollbacks(child, childResults)) {
+                    anyRollbacks = true;
+                }
+            }
+            if (anyRollbacks) {
+                results.add(gNode);
+            }
+            results.addAll(childResults);
+            return anyRollbacks;
+        } else {
+            throw new RuntimeException("Node is neither Group nor Endpoint.");
+        }
     }
 }

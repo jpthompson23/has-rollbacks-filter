@@ -1,6 +1,6 @@
 package local.john;
 
-public abstract class ISavedTreeItem {
+public abstract class ISavedTreeItem extends TypeMatchable {
 
     private final String name;
 
